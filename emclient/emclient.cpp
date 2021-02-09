@@ -17,7 +17,7 @@
 
 using namespace emscripten;
 
-struct EMClient
+struct EMClient : public WalletClient
 {
 public:
     EMClient(const std::string& phrase)

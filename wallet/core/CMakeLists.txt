@@ -32,14 +32,26 @@ target_sources(wallet
         private_key_keeper.cpp
 )
 
-target_link_libraries(wallet 
-    PUBLIC
-        core
-        keykeeper
-        node
-    PRIVATE
-        sqlite
-)
+if(EMSCRIPTEN)
+    target_compile_definitions(wallet PUBLIC EMSCRIPTEN)
+    # target_link_libraries(wallet 
+    #     # PUBLIC
+    #     #     core
+    #     #     keykeeper
+    #     #     node
+    #     PRIVATE
+    #         sqlite
+    # )
+else()
+    target_link_libraries(wallet 
+        PUBLIC
+            core
+            keykeeper
+            node
+        PRIVATE
+            sqlite
+    )
+endif()
 
 target_compile_features(wallet PUBLIC cxx_std_17)
 
