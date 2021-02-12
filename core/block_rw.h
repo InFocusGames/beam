@@ -51,7 +51,7 @@ namespace beam
 		{
 			std::FStream m_Stream;
 
-			void Open(const char*, const Block::ChainWorkProof&);
+			void Open(const char*, const Block::ChainWorkProof&, const Rules& rules);
 		};
 
 		struct IParser
@@ -64,7 +64,7 @@ namespace beam
 			virtual bool OnShieldedIn(const ShieldedTxo::DescriptionInp&) { return true; }
 			virtual bool OnAsset(Asset::Full&) { return true; }
 
-			bool Proceed(const char*);
+			bool Proceed(const char*, const Rules&);
 
 			struct Context;
 		};

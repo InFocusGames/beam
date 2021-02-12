@@ -2496,7 +2496,7 @@ namespace beam::wallet
         MyParser p(*this, prog);
         p.Init(get_OwnerKdf());
 
-        if (p.Proceed(path.c_str()))
+        if (p.Proceed(path.c_str(), beam::Rules::get()))
         {
             storage::setTreasuryHandled(*this, true);
             set_ShieldedOuts(p.m_ShieldedOuts);

@@ -309,14 +309,14 @@ namespace beam
 
 	/////////////
 	// RecoveryInfo
-	void RecoveryInfo::Writer::Open(const char* sz, const Block::ChainWorkProof& cwp)
+	void RecoveryInfo::Writer::Open(const char* sz, const Block::ChainWorkProof& cwp, const Rules& rules)
 	{
 		m_Stream.Open(sz, false, true);
 		yas::binary_oarchive<std::FStream, SERIALIZE_OPTIONS> ser(m_Stream);
 
 		Height hMax = cwp.m_Heading.m_Prefix.m_Height + cwp.m_Heading.m_vElements.size() - 1;
 
-		const Rules& r = Rules::get();
+		const Rules& r = rules;
 
 		uint32_t nForks = 0;
 		for (; nForks < _countof(r.pForks); nForks++)
@@ -345,10 +345,12 @@ namespace beam
 		Merkle::CompactMmr m_Shielded;
 		Merkle::CompactMmr m_Assets;
 		Merkle::Hash m_hvContracts;
+		const Rules& m_Rules;
 
-		Context(IParser& p)
+		Context(IParser& p, const Rules& rules)
 			:m_Parser(p)
 			,m_Der(m_Stream)
+			,m_Rules(rules)
 		{
 		}
 
@@ -370,6 +372,8 @@ namespace beam
 		static void ThrowBadData() {
 			throw std::runtime_error("Data inconsistent");
 		}
+
+		const Rules& get_Rules() const { return m_Rules; }
 	};
 
 	void RecoveryInfo::RecoveryInfo::IParser::Context::Open(const char* sz)
@@ -380,7 +384,7 @@ namespace beam
 		uint32_t nForks = 0;
 		m_Der & nForks;
 
-		const Rules& r = Rules::get();
+		const Rules& r = get_Rules();
 		if (nForks > _countof(r.pForks))
 			ThrowRulesMismatch();
 
@@ -445,9 +449,9 @@ namespace beam
 			ThrowBadData();
 	}
 
-	bool RecoveryInfo::IParser::Proceed(const char* sz)
+	bool RecoveryInfo::IParser::Proceed(const char* sz, const Rules& rules)
 	{
-		Context ctx(*this);
+		Context ctx(*this, rules);
 		ctx.Open(sz);
 		return ctx.Proceed();
 	}
@@ -462,7 +466,7 @@ namespace beam
 		if (!ProceedUtxos())
 			return false;
 
-		const Rules& r = Rules::get();
+		const Rules& r = get_Rules();
 		if (m_Tip.m_Height >= r.pForks[2].m_Height)
 		{
 			if (!ProceedShielded())

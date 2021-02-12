@@ -1607,7 +1607,7 @@ namespace beam
 		parser.m_pOwner1 = node.m_Keys.m_pOwner;
 		parser.m_pOwner2 = node2.m_Keys.m_pOwner;
 
-		verify_test(parser.Proceed(g_sz3));
+		verify_test(parser.Proceed(g_sz3, Rules::get()));
 
 		DeleteFile(g_sz3);
 	}
@@ -2968,7 +2968,7 @@ namespace beam
 
 		MyParser p;
 		p.Init(cl.m_Wallet.m_pKdf);
-		p.Proceed(beam::g_sz3); // check we can rebuild the Live consistently with shielded and assets
+		p.Proceed(beam::g_sz3, Rules::get()); // check we can rebuild the Live consistently with shielded and assets
 
 		verify_test((p.m_SpendKeys.size() == 1) && (p.m_Spent == 1) && p.m_Utxos && p.m_Assets);
 

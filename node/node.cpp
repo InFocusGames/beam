@@ -4525,7 +4525,7 @@ bool Node::GenerateRecoveryInfo(const char* szPath)
 
 	try
 	{
-		ctx.m_Writer.Open(szPath, m_Processor.m_Cwp);
+		ctx.m_Writer.Open(szPath, m_Processor.m_Cwp, get_Rules());
 		m_Processor.get_Utxos().Traverse(ctx);
 
         const Rules& r = get_Rules();
