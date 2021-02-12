@@ -49,7 +49,7 @@ void NodeProcessor::Horizon::SetInfinite()
 
 void NodeProcessor::Horizon::SetStdFastSync()
 {
-	uint32_t r = Rules::get().MaxRollback;
+	uint32_t r = get_Rules().MaxRollback;
 	m_Branching = r / 4; // inferior branches would be pruned when height difference is this.
 
 	m_Sync.Hi = r;
@@ -63,7 +63,7 @@ void NodeProcessor::Horizon::Normalize()
 {
 	std::setmax(m_Branching, Height(1));
 
-	Height r = Rules::get().MaxRollback;
+	Height r = get_Rules().MaxRollback;
 
 	std::setmax(m_Sync.Hi, std::max(r, m_Branching));
 	std::setmax(m_Sync.Lo, m_Sync.Hi);
@@ -103,8 +103,8 @@ void NodeProcessor::Initialize(const char* szPath, const StartParams& sp)
 	bool bUpdateChecksum = !m_DB.ParamGet(NodeDB::ParamID::CfgChecksum, NULL, &blob);
 	if (!bUpdateChecksum)
 	{
-		const HeightHash* pFork = Rules::get().FindFork(hv);
-		if (&Rules::get().get_LastFork() != pFork)
+		const HeightHash* pFork = get_Rules().FindFork(hv);
+		if (&get_Rules().get_LastFork() != pFork)
 		{
 			if (!pFork)
 			{
@@ -131,7 +131,7 @@ void NodeProcessor::Initialize(const char* szPath, const StartParams& sp)
 	{
 		LOG_INFO() << "Settings configuration";
 
-		blob = Blob(Rules::get().get_LastFork().m_Hash);
+		blob = Blob(get_Rules().get_LastFork().m_Hash);
 		m_DB.ParamSet(NodeDB::ParamID::CfgChecksum, NULL, &blob);
 	}
 
@@ -154,7 +154,7 @@ void NodeProcessor::Initialize(const char* szPath, const StartParams& sp)
 
 	m_nSizeUtxoComission = 0;
 
-	if (Rules::get().TreasuryChecksum == Zero)
+	if (get_Rules().TreasuryChecksum == Zero)
 		m_Extra.m_TxosTreasury = 1; // artificial gap
 	else
 		m_DB.ParamGet(NodeDB::ParamID::Treasury, &m_Extra.m_TxosTreasury, nullptr, nullptr);
@@ -413,7 +413,7 @@ void NodeProcessor::InitCursor(bool bMovingUp)
 	{
 		m_Mmr.m_States.m_Count = 0;
 		ZeroObject(m_Cursor);
-		m_Cursor.m_ID.m_Hash = Rules::get().Prehistoric;
+		m_Cursor.m_ID.m_Hash = get_Rules().Prehistoric;
 	}
 
 	m_Cursor.m_DifficultyNext = get_NextDifficulty();
@@ -634,7 +634,7 @@ void NodeProcessor::EnumCongestions()
 				// So we'll limit the height range by the maximum "sane" value (which is also very unlikely to contain any block).
 				//
 				// In a worst-case scenario (extremely unlikely) the sync will fail, then all the blocks will be deleted, and sync restarts
-				Height hMaxSane = m_Cursor.m_ID.m_Height + Rules::get().MaxRollback;
+				Height hMaxSane = m_Cursor.m_ID.m_Height + get_Rules().MaxRollback;
 				if (hTargetPrev < hMaxSane)
 				{
 					if (m_SyncData.m_Target.m_Height <= hMaxSane)
@@ -716,7 +716,7 @@ const uint64_t* NodeProcessor::get_CachedRows(const NodeDB::StateID& sid, Height
 
 Height NodeProcessor::get_MaxAutoRollback()
 {
-	return Rules::get().MaxRollback;
+	return get_Rules().MaxRollback;
 }
 
 Height NodeProcessor::get_LowestReturnHeight()
@@ -1714,8 +1714,8 @@ Height NodeProcessor::PruneOld()
 		}
 	}
 
-	if (IsBigger2(m_Cursor.m_Sid.m_Height, m_Extra.m_Fossil, (Height) Rules::get().MaxRollback))
-		hRet += RaiseFossil(m_Cursor.m_Sid.m_Height - Rules::get().MaxRollback);
+	if (IsBigger2(m_Cursor.m_Sid.m_Height, m_Extra.m_Fossil, (Height) get_Rules().MaxRollback))
+		hRet += RaiseFossil(m_Cursor.m_Sid.m_Height - get_Rules().MaxRollback);
 
 	if (IsBigger2(m_Cursor.m_Sid.m_Height, m_Extra.m_TxoLo, m_Horizon.m_Local.Lo))
 		hRet += RaiseTxoLo(m_Cursor.m_Sid.m_Height - m_Horizon.m_Local.Lo);
@@ -3014,7 +3014,7 @@ void NodeProcessor::RescanOwnedTxos()
 		LOG_INFO() << "Rescanning shielded Txos...";
 
 		// shielded items
-		Height h0 = Rules::get().pForks[2].m_Height;
+		Height h0 = get_Rules().pForks[2].m_Height;
 		if (m_Cursor.m_Sid.m_Height >= h0)
 		{
 			TxoID nOuts = m_Extra.m_ShieldedOutputs;
@@ -3055,7 +3055,7 @@ Height NodeProcessor::FindVisibleKernel(const Merkle::Hash& id, const BlockInter
 	{
 		assert(h <= bic.m_Height);
 
-		const Rules& r = Rules::get();
+		const Rules& r = get_Rules();
 		if ((bic.m_Height >= r.pForks[2].m_Height) && (bic.m_Height - h > r.MaxKernelValidityDH))
 			return 0; // Starting from Fork2 - visibility horizon is limited
 	}
@@ -3221,7 +3221,7 @@ bool NodeProcessor::HandleAssetDestroy(const PeerID& pidOwner, BlockInterpretCtx
 			if (ai.m_Value != Zero)
 				return false;
 
-			if (ai.m_LockHeight + Rules::get().CA.LockPeriod > bic.m_Height)
+			if (ai.m_LockHeight + get_Rules().CA.LockPeriod > bic.m_Height)
 				return false;
 
 			assert(bic.m_AssetsUsed);
@@ -3374,7 +3374,7 @@ bool NodeProcessor::HandleKernelType(const TxKernelShieldedOutput& krn, BlockInt
 	{
 		if (!bic.m_AlreadyValidated)
 		{
-			if (bic.m_ShieldedOuts >= Rules::get().Shielded.MaxOuts)
+			if (bic.m_ShieldedOuts >= get_Rules().Shielded.MaxOuts)
 			{
 				bic.m_LimitExceeded = true;
 				return false;
@@ -3462,7 +3462,7 @@ bool NodeProcessor::HandleKernelType(const TxKernelShieldedInput& krn, BlockInte
 			if (!bic.ValidateAssetRange(krn.m_pAsset))
 				return false;
 
-			if (bic.m_ShieldedIns >= Rules::get().Shielded.MaxIns)
+			if (bic.m_ShieldedIns >= get_Rules().Shielded.MaxIns)
 			{
 				bic.m_LimitExceeded = true;
 				return false;
@@ -3747,7 +3747,7 @@ void NodeProcessor::ManageKrnID(BlockInterpretCtx& bic, const TxKernel& krn)
 
 bool NodeProcessor::HandleBlockElement(const TxKernel& v, BlockInterpretCtx& bic)
 {
-	const Rules& r = Rules::get();
+	const Rules& r = get_Rules();
 	if (bic.m_Fwd && (bic.m_Height >= r.pForks[2].m_Height) && !bic.m_AlreadyValidated)
 	{
 		Height hPrev = FindVisibleKernel(v.m_Internal.m_ID, bic);
@@ -3862,7 +3862,7 @@ bool NodeProcessor::IsShieldedInPool(const Transaction& tx)
 
 bool NodeProcessor::IsShieldedInPool(const TxKernelShieldedInput& krn)
 {
-	const Rules& r = Rules::get();
+	const Rules& r = get_Rules();
 	if (!r.Shielded.Enabled)
 		return false;
 
@@ -4573,7 +4573,7 @@ NodeProcessor::DataStatus::Enum NodeProcessor::OnStateInternal(const Block::Syst
 	if (s.m_TimeStamp > ts)
 	{
 		ts = s.m_TimeStamp - ts; // dt
-		if (ts > Rules::get().DA.MaxAhead_s)
+		if (ts > get_Rules().DA.MaxAhead_s)
 		{
 			LOG_WARNING() << id << " Timestamp ahead by " << ts;
 			return DataStatus::Invalid;
@@ -4628,7 +4628,7 @@ NodeProcessor::DataStatus::Enum NodeProcessor::OnBlock(const Block::SystemState:
 NodeProcessor::DataStatus::Enum NodeProcessor::OnBlock(const NodeDB::StateID& sid, const Blob& bbP, const Blob& bbE, const PeerID& peer)
 {
 	size_t nSize = size_t(bbP.n) + size_t(bbE.n);
-	if (nSize > Rules::get().MaxBodySize)
+	if (nSize > get_Rules().MaxBodySize)
 	{
 		LOG_WARNING() << LogSid(m_DB, sid) << " Block too large: " << nSize;
 		return DataStatus::Invalid;
@@ -4651,7 +4651,7 @@ NodeProcessor::DataStatus::Enum NodeProcessor::OnBlock(const NodeDB::StateID& si
 
 NodeProcessor::DataStatus::Enum NodeProcessor::OnTreasury(const Blob& blob)
 {
-	if (Rules::get().TreasuryChecksum == Zero)
+	if (get_Rules().TreasuryChecksum == Zero)
 		return DataStatus::Invalid; // should be no treasury
 
 	ECC::Hash::Value hv;
@@ -4659,7 +4659,7 @@ NodeProcessor::DataStatus::Enum NodeProcessor::OnTreasury(const Blob& blob)
 		<< blob
 		>> hv;
 
-	if (Rules::get().TreasuryChecksum != hv)
+	if (get_Rules().TreasuryChecksum != hv)
 		return DataStatus::Invalid;
 
 	if (IsTreasuryHandled())
@@ -4706,7 +4706,7 @@ uint64_t NodeProcessor::FindActiveAtStrict(Height h)
 // Block generation
 Difficulty NodeProcessor::get_NextDifficulty()
 {
-	const Rules& r = Rules::get(); // alias
+	const Rules& r = get_Rules(); // alias
 
 	if (!m_Cursor.m_Sid.m_Row)
 		return r.DA.Difficulty0; // 1st block
@@ -4821,9 +4821,9 @@ void NodeProcessor::get_MovingMedianEx(Height hLast, uint32_t nWindow, THW& res)
 			// append "prehistoric" blocks of starting difficulty and perfect timing
 			const THW& thwSrc = v[v.size() - 2];
 
-			thw.first = thwSrc.first - Rules::get().DA.Target_s;
+			thw.first = thwSrc.first - get_Rules().DA.Target_s;
 			thw.second.first = thwSrc.second.first - 1;
-			thw.second.second = thwSrc.second.second - Rules::get().DA.Difficulty0; // don't care about overflow
+			thw.second.second = thwSrc.second.second - get_Rules().DA.Difficulty0; // don't care about overflow
 		}
 	}
 
@@ -4839,7 +4839,7 @@ Timestamp NodeProcessor::get_MovingMedian()
 		return 0;
 
 	THW thw;
-	get_MovingMedianEx(m_Cursor.m_Sid.m_Height, Rules::get().DA.WindowMedian0, thw);
+	get_MovingMedianEx(m_Cursor.m_Sid.m_Height, get_Rules().DA.WindowMedian0, thw);
 	return thw.first;
 }
 
@@ -5007,7 +5007,7 @@ size_t NodeProcessor::GenerateNewBlockInternal(BlockContext& bc, BlockInterpretC
 	if (bc.m_Fees)
 		ssc.m_Counter.m_Value += m_nSizeUtxoComission;
 
-	const size_t nSizeMax = Rules::get().MaxBodySize;
+	const size_t nSizeMax = get_Rules().MaxBodySize;
 	if (ssc.m_Counter.m_Value > nSizeMax)
 	{
 		// the block may be non-empty (i.e. contain treasury)
@@ -5224,7 +5224,7 @@ bool NodeProcessor::GenerateNewBlock(BlockContext& bc)
 		);
 	}
 
-	return nSize <= Rules::get().MaxBodySize;
+	return nSize <= get_Rules().MaxBodySize;
 }
 
 Executor& NodeProcessor::get_Executor()
@@ -5736,7 +5736,7 @@ void NodeProcessor::RecentStates::Push(uint64_t rowID, const Block::SystemState:
 	if (m_vec.empty())
 	{
 		// we use this cache mainly to improve difficulty calculation. Hence the cache size is appropriate
-		const Rules& r = Rules::get();
+		const Rules& r = get_Rules();
 	
 		const size_t n = std::max(r.DA.WindowWork + r.DA.WindowMedian1, r.DA.WindowMedian0) + 5;
 		m_vec.resize(n);
@@ -5819,7 +5819,7 @@ void NodeProcessor::RebuildNonStd()
 
 	} wlk(*this);
 
-	EnumKernels(wlk, HeightRange(Rules::get().pForks[2].m_Height, m_Cursor.m_ID.m_Height));
+	EnumKernels(wlk, HeightRange(get_Rules().pForks[2].m_Height, m_Cursor.m_ID.m_Height));
 
 	TestDefinitionStrict();
 }

@@ -180,6 +180,8 @@ struct Node
 	~Node();
 	void Initialize(IExternalPOW* externalPOW=nullptr);
 
+	const Rules& get_Rules() const { return Rules::get(); };
+	Rules& get_Rules() { return Rules::get(); };
 	NodeProcessor& get_Processor() { return m_Processor; } // for tests only!
 
 	struct SyncStatus
@@ -244,7 +246,6 @@ private:
 		} m_ExecutorMT;
 
 		virtual Executor& get_Executor() override { return m_ExecutorMT; }
-
 
 		Block::ChainWorkProof m_Cwp; // cached
 		bool BuildCwp();
@@ -527,6 +528,8 @@ private:
 
 		Peer(Node& n) :m_This(n) {}
 
+		const Rules& get_Rules() const { return m_This.get_Rules(); }
+
 		void TakeTasks();
 		void ReleaseTasks();
 		void ReleaseTask(Task&);
@@ -647,6 +650,8 @@ private:
 		void Start();
 		uint16_t get_Port();
 
+		const Rules& get_Rules() const { return get_ParentObj().get_Rules(); }
+
 		static void OnClosed(uv_handle_t*);
 		static void OnRcv(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr, unsigned flags);
 		static void AllocBuf(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf);
@@ -683,7 +688,7 @@ private:
 		bool IsEnabled() { return m_External.m_pSolver || !m_vThreads.empty(); }
 
 		void Initialize(IExternalPOW* externalPOW=nullptr);
-
+		const Rules& get_Rules() const { return get_ParentObj().get_Rules(); }
 		void OnRefresh(uint32_t iIdx);
 		void OnRefreshExternal();
 		void OnMined();

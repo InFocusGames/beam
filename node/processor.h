@@ -244,6 +244,9 @@ class NodeProcessor
 		void RollbackTo(Height);
 		void Push(uint64_t rowID, const Block::SystemState::Full&);
 
+		const Rules& get_Rules() const { return get_ParentObj().get_Rules(); }
+		IMPLEMENT_GET_PARENT_OBJ(NodeProcessor, m_RecentStates)
+
 	} m_RecentStates;
 
 	void DeleteBlocksInRange(const NodeDB::StateID& sidTop, Height hStop);
@@ -269,6 +272,8 @@ public:
 	NodeProcessor();
 	virtual ~NodeProcessor();
 
+    const Rules& get_Rules() const { return Rules::get(); }
+
 	bool ForbidActiveAt(Height);
 	void ManualRollbackTo(Height);
 
@@ -291,6 +296,9 @@ public:
 		void Normalize(); // make sure parameters are consistent w.r.t. each other and MaxRollback
 
 		Horizon(); // by default all horizons are disabled, i.e. full archieve.
+
+		const Rules& get_Rules() const { return get_ParentObj().get_Rules(); }
+		IMPLEMENT_GET_PARENT_OBJ(NodeProcessor, m_Horizon)
 
 	} m_Horizon;
 

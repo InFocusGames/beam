@@ -205,6 +205,7 @@ namespace bvm2 {
 			void Append(uint8_t nTag, const Blob&);
 		};
 
+		const Rules& get_Rules() const { return beam::Rules::get(); }
 
 		virtual void InvokeExt(uint32_t) override;
 

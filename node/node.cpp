@@ -157,7 +157,7 @@ void Node::UpdateSyncStatusRaw()
 
 			hTotal++;
 
-			const uint32_t& trg_s = Rules::get().DA.Target_s;
+			const uint32_t& trg_s = get_Rules().DA.Target_s;
 			if (trg_s)
 				std::setmax(hTotal, m_Processor.m_Cursor.m_ID.m_Height + ts1_s / trg_s);
 		}
@@ -555,7 +555,7 @@ void Node::Processor::DeleteOutdated()
 	TxPool::Fluff& txp = get_ParentObj().m_TxPool;
 
     Height h = get_ParentObj().m_Cfg.m_RollbackLimit.m_Max;
-    std::setmin(h, Rules::get().MaxRollback);
+    std::setmin(h, get_Rules().MaxRollback);
 
     if (m_Cursor.m_ID.m_Height > h)
     {
@@ -2164,7 +2164,7 @@ uint8_t Node::ValidateTx(Transaction::Context& ctx, const Transaction& tx)
 	if (proto::TxStatus::Ok != nCode)
 		return nCode;
 
-	if (ctx.m_Height.m_Min >= Rules::get().pForks[1].m_Height)
+	if (ctx.m_Height.m_Min >= get_Rules().pForks[1].m_Height)
 	{
 		Transaction::FeeSettings feeSettings;
 		AmountBig::Type fees = feeSettings.Calculate(ctx.m_Stats);
@@ -2274,7 +2274,7 @@ uint8_t Node::OnTransactionStem(Transaction::Ptr&& ptx)
 		return proto::TxStatus::TooSmall;
 	}
 
-    if ((s.m_InputsShielded > Rules::get().Shielded.MaxIns) || (s.m_OutputsShielded > Rules::get().Shielded.MaxOuts)) {
+    if ((s.m_InputsShielded > get_Rules().Shielded.MaxIns) || (s.m_OutputsShielded > get_Rules().Shielded.MaxOuts)) {
         return proto::TxStatus::LimitExceeded;
     }
 
@@ -2763,7 +2763,7 @@ void Node::Peer::OnLogin(proto::Login&& msg)
 		(proto::LoginFlags::Bbs & msg.m_Flags))
 	{
 		proto::BbsResetSync msgOut;
-		msgOut.m_TimeFrom = std::min(m_This.m_Bbs.m_HighestPosted_s, getTimestamp() - Rules::get().DA.MaxAhead_s);
+		msgOut.m_TimeFrom = std::min(m_This.m_Bbs.m_HighestPosted_s, getTimestamp() - get_Rules().DA.MaxAhead_s);
 		Send(msgOut);
 	}
 
@@ -3205,7 +3205,7 @@ void Node::Peer::OnMsg(proto::GetShieldedList&& msg)
 	Processor& p = m_This.m_Processor;
 	if ((msg.m_Id0 < p.m_Extra.m_ShieldedOutputs) && msg.m_Count)
 	{
-        std::setmin(msg.m_Count, Rules::get().Shielded.m_ProofMax.get_N() * 2); // no reason to ask for more
+        std::setmin(msg.m_Count, get_Rules().Shielded.m_ProofMax.get_N() * 2); // no reason to ask for more
 
 		TxoID n = p.m_Extra.m_ShieldedOutputs - msg.m_Id0;
 
@@ -3293,7 +3293,7 @@ void Node::Peer::OnMsg(proto::GetExternalAddr&& msg)
 
 void Node::Peer::OnMsg(proto::BbsMsg&& msg)
 {
-	if ((m_This.m_Processor.m_Cursor.m_ID.m_Height >= Rules::get().pForks[1].m_Height) && !Rules::get().FakePoW)
+	if ((m_This.m_Processor.m_Cursor.m_ID.m_Height >= get_Rules().pForks[1].m_Height) && !get_Rules().FakePoW)
 	{
 		// test the hash
 		ECC::Hash::Value hv;
@@ -3311,13 +3311,13 @@ void Node::Peer::OnMsg(proto::BbsMsg&& msg)
 
 	Timestamp t = getTimestamp();
 
-    if (msg.m_TimePosted > t + Rules::get().DA.MaxAhead_s)
+    if (msg.m_TimePosted > t + get_Rules().DA.MaxAhead_s)
 		return; // too much ahead of time
 
     if (msg.m_TimePosted + m_This.m_Cfg.m_Bbs.m_MessageTimeout_s < t)
         return; // too old
 
-    if (msg.m_TimePosted + Rules::get().DA.MaxAhead_s < m_This.m_Bbs.m_HighestPosted_s)
+    if (msg.m_TimePosted + get_Rules().DA.MaxAhead_s < m_This.m_Bbs.m_HighestPosted_s)
         return; // don't allow too much out-of-order messages
 
     NodeDB& db = m_This.m_Processor.get_DB();
@@ -3774,7 +3774,7 @@ void Node::Miner::Initialize(IExternalPOW* externalPOW)
             PerThread &pt = m_vThreads[i];
             pt.m_pReactor = io::Reactor::create();
             pt.m_pEvt = io::AsyncEvent::create(*pt.m_pReactor, [this, i]() { OnRefresh(i); });
-            pt.m_Thread = std::thread(&Miner::RunMinerThread, this, pt.m_pReactor, Rules::get());
+            pt.m_Thread = std::thread(&Miner::RunMinerThread, this, pt.m_pReactor, get_Rules());
         }
     }
 
@@ -3847,7 +3847,7 @@ void Node::Miner::OnRefresh(uint32_t iIdx)
             return false;
         };
 
-        if (Rules::get().FakePoW)
+        if (get_Rules().FakePoW)
         {
             uint32_t timeout_ms = get_ParentObj().m_Cfg.m_TestMode.m_FakePowSolveTime_ms;
 
@@ -4260,7 +4260,7 @@ void Node::Beacon::OnTimer()
         m_pOut = new OutCtx;
         m_pOut->m_Refs = 1;
 
-        m_pOut->m_Message.m_CfgChecksum = Rules::get().get_LastFork().m_Hash;
+        m_pOut->m_Message.m_CfgChecksum = get_Rules().get_LastFork().m_Hash;
         m_pOut->m_Message.m_NodeID = get_ParentObj().m_MyPublicID;
         m_pOut->m_Message.m_Port = htons(get_ParentObj().m_Cfg.m_Listen.port());
 
@@ -4301,10 +4301,10 @@ void Node::Beacon::OnRcv(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, c
 
     memcpy(&msg, buf->base, sizeof(msg)); // copy it to prevent (potential) datatype misallignment and etc.
 
-    if (msg.m_CfgChecksum != Rules::get().get_LastFork().m_Hash)
-        return;
-
     Beacon* pThis = (Beacon*)handle->data;
+
+    if (msg.m_CfgChecksum != pThis->get_Rules().get_LastFork().m_Hash)
+        return;
 
     if (pThis->get_ParentObj().m_MyPublicID == msg.m_NodeID)
         return;
@@ -4528,7 +4528,7 @@ bool Node::GenerateRecoveryInfo(const char* szPath)
 		ctx.m_Writer.Open(szPath, m_Processor.m_Cwp);
 		m_Processor.get_Utxos().Traverse(ctx);
 
-        const Rules& r = Rules::get();
+        const Rules& r = get_Rules();
 
         if (m_Processor.m_Cursor.m_ID.m_Height >= r.pForks[2].m_Height)
         {

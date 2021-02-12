@@ -1208,7 +1208,7 @@ namespace bvm2 {
 		Asset::ID ret = AssetCreate(md, av.m_Owner);
 		if (ret)
 		{
-			ProcessorPlus_Contract::From(*this).HandleAmountOuter(Rules::get().CA.DepositForList, Zero, true);
+			ProcessorPlus_Contract::From(*this).HandleAmountOuter(get_Rules().CA.DepositForList, Zero, true);
 
 			SetAssetKey(av, ret);
 			SaveVar(av.m_vk, av.m_Owner.m_pData, av.m_Owner.nBytes);
@@ -1267,7 +1267,7 @@ namespace bvm2 {
 		bool b = AssetDestroy(aid, av.m_Owner);
 		if (b)
 		{
-			HandleAmountOuter(Rules::get().CA.DepositForList, Zero, false);
+			HandleAmountOuter(get_Rules().CA.DepositForList, Zero, false);
 			SaveVar(av.m_vk, nullptr, 0);
 		}
 
@@ -1332,7 +1332,7 @@ namespace bvm2 {
 	}
 	BVM_METHOD_HOST(get_RulesCfg)
 	{
-		const auto& r = Rules::get();
+		const auto& r = get_Rules();
 		auto iFork = r.FindFork(h);
 		res = r.pForks[iFork].m_Hash;
 		return r.pForks[iFork].m_Height;
