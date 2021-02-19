@@ -17,20 +17,27 @@
 
 using namespace emscripten;
 
-struct EMClient : public WalletClient
+class WasmClient : public WalletClient
+{
+
+}
+
+struct WasmClientWrapper
 {
 public:
-    EMClient(const std::string& phrase)
+    WasmClientWrapper(const std::string& phrase)
     {
+        _client = make_unique<WalletModel>(walletDB, "127.0.0.1:10005", reactor);
     }
 
 private:
+    std::unique_ptr<WasmClient> _client;
 
 };
 // Binding code
 EMSCRIPTEN_BINDINGS() 
 {
-    class_<EMClient>("EMClient")
+    class_<WasmClientWrapper>("WasmClientWrapper")
         .constructor<const std::string&>()
         // .function("getOwnerKey",            &KeyKeeper::GetOwnerKey)
         // .function("getWalletID",            &KeyKeeper::GetWalletID)
